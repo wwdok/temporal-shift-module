@@ -64,6 +64,7 @@ class InvertedResidual(nn.Module):
         else:
             return self.conv(x)
 
+
 class InvertedResidualWithShift(nn.Module):
     def __init__(self, inp, oup, stride, expand_ratio):
         super(InvertedResidualWithShift, self).__init__()
@@ -154,7 +155,7 @@ class MobileNetV2(nn.Module):
                 x = f(x)
         x = x.mean(3).mean(2)
         x = self.classifier(x)
-        return (x, *out_buffer)
+        return x, *out_buffer
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -177,7 +178,8 @@ def mobilenet_v2_140():
 
 
 if __name__ == '__main__':
-    net = MobileNetV2()
+    net = MobileNetV2(n_class=27)
+    # print(net)
     x = torch.rand(1, 3, 224, 224)
     shift_buffer = [torch.zeros([1, 3, 56, 56]),
                     torch.zeros([1, 4, 28, 28]),
@@ -190,7 +192,9 @@ if __name__ == '__main__':
                     torch.zeros([1, 20, 7, 7]),
                     torch.zeros([1, 20, 7, 7])]
     with torch.no_grad():
-        for _ in range(10):
-            y, shift_buffer = net(x, *shift_buffer)
+        for _ in range(1):
+            outputs = net(x, *shift_buffer)
+            print(f'len(output) is {len(outputs)}')  # 11
+            feat, buffer = outputs[0], outputs[1:]
+            print(feat.shape)  # torch.Size([1, 27])
             print([s.shape for s in shift_buffer])
-    
