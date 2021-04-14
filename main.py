@@ -96,7 +96,7 @@ def main():
     if args.tune_from:
         print(("=> fine-tuning from '{}'".format(args.tune_from)))
         sd = torch.load(args.tune_from)
-        sd = sd['state_dict']
+        # sd = sd['state_dict']
         model_dict = model.state_dict()
         replace_dict = []
         for k, v in sd.items():
@@ -120,7 +120,7 @@ def main():
         if args.modality == 'Flow' and 'Flow' not in args.tune_from:
             sd = {k: v for k, v in sd.items() if 'conv1.weight' not in k}
         model_dict.update(sd)
-        model.load_state_dict(model_dict)
+        model.load_state_dict(model_dict, False)
 
     if args.temporal_pool and not args.resume:
         make_temporal_pool(model.module.base_model, args.num_segments)

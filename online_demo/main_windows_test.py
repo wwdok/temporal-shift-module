@@ -15,7 +15,6 @@ import torch
 import torchvision
 import torch.onnx
 from PIL import Image, ImageOps
-import onnx
 from mobilenet_v2_tsm import MobileNetV2
 
 SOFTMAX_THRES = 0
@@ -166,7 +165,7 @@ def process_output(idx_, idx_history):
     # mask out illegal action
     if idx_ in [7, 8, 21, 22, 3]:
         idx_ = idx_history[-1]
-    print(f'1 history[-1] is {idx_history[-1]}')
+    # print(f'1 history[-1] is {idx_history[-1]}')
 
     # 把"Doing other things" 等同于 "No gesture"
     if idx_ == 0:
@@ -179,8 +178,8 @@ def process_output(idx_, idx_history):
 
     idx_history.append(idx_)
     idx_history = idx_history[-max_hist_len:]  # 只保留最新的max_hist_len个元素
-    print(f'history length in process_output is {len(idx_history)}')
-    print(f'2 history[-1] is {idx_history[-1]}')
+    # print(f'history length in process_output is {len(idx_history)}')
+    # print(f'2 history[-1] is {idx_history[-1]}')
     return idx_history[-1], idx_history
 
 
@@ -208,7 +207,7 @@ def get_executor(use_gpu=True):
 
 
 def main():
-    print("Open camera...")
+    print("Open image...")
     cap = cv2.VideoCapture(0)
 
     # set a lower resolution for speed up
@@ -231,13 +230,13 @@ def main():
     idx = 0
     idx_history = [2]  # 初始化inx_history，idx = 2代表假设一开始时是No gesture
     history_logit = []
-    i_frame = -1
+    i_frame = 1
 
     print("Ready!")
     with torch.no_grad():
         while True:
             i_frame += 1
-            _, img = cap.read()
+            img = cv2.imread('snap_fingers.jpg')
             if i_frame % 2 == 0:  # skip every other frame to obtain a suitable frame rate
                 t1 = time.time()
 
@@ -245,14 +244,18 @@ def main():
                 # print(f'img_tran.size() is {img_tran.size()}')  # torch.Size([3, 224, 224])
                 input_var = img_tran.view(1, 3, img_tran.size(1), img_tran.size(2))  # add one more dimension
                 # model need be fed two inputs
+                # print(f'input_var is {input_var}')
+
                 outputs = model(input_var, *buffer)
                 feat, buffer = outputs[0], outputs[1:]
+                # print(f'buffer is {len(buffer)} and length is {len(buffer)}')  # 10
+                print(f'buffer is {buffer}')
                 # print(f'feat is {feat} and size is {feat.size()}')
                 # feat is tensor([[1.2658, 0.2161, 2.6009, 0.2375, 0.4619, -0.6576, 0.2948, -0.9396,
                 #                  -0.8498, 0.2217, 0.1223, -1.4733, -1.3406, 0.2248, 0.4350, 0.0632,
                 #                  -1.3974, -1.4234, 0.2380, -0.0771, 0.2499, -0.2796, -0.0700, 0.3558,
                 #                  0.4856, 0.4934, 0.5418]]) and size is torch.Size([1, 27])
-                # print(f'buffer is {len(buffer)} and length is {len(buffer)}')  # 10
+
                 feat = feat.detach()
 
                 # 我看不出下面这个代码块计算出的idx_有什么用，它只求单次结果的最大值，误差大，所以先注释掉了
@@ -276,14 +279,14 @@ def main():
                     history_logit = history_logit[-12:]  # 只保留最新加入的12个元素
                     # print(f'history_logit length is {len(history_logit)}')   # 从1增大到12后就一致保持在12了
                     avg_logit = sum(history_logit)  # 对这27个动作类别的12次结果求和
-                    print(f'avg_logit is {avg_logit}')
+                    # print(f'avg_logit is {avg_logit}')
                     idx_ = np.argmax(avg_logit, axis=1)[0]
                     # print(f'idx_ is {idx_}')
 
                 idx, idx_history = process_output(idx_, idx_history)
 
                 t2 = time.time()
-                print(f"{index} frame, recognition result is {catigories[idx]}")
+                # print(f"{index} frame, recognition result is {catigories[idx]}")
 
                 spend_time = t2 - t1
 
@@ -328,4 +331,13 @@ def main():
         cv2.destroyAllWindows()
 
 
-main()
+def check_pth():
+    weight = torch.load("mobilenetv2_jester_online.pth.tar")
+    # print(weight)
+    for k, v in weight.items():
+        print(k)
+
+
+
+    # main()
+check_pth()

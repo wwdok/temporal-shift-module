@@ -18,7 +18,7 @@ if __name__ == '__main__':
         assert i == int(idx)  # make sure the rank is right
         categories.append(cat)
 
-    with open('category.txt', 'w') as f:
+    with open('../dataset/jester/category.txt', 'w') as f:
         f.write('\n'.join(categories))
 
     dict_categories = {}
